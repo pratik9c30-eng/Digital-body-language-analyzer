@@ -56,6 +56,20 @@ def test_single_signal_spike_does_not_lock():
     assert not math.isnan(result.trust_score)
 
 
+def test_two_standard_deviation_variation_does_not_trigger_high_risk():
+    baseline = build_baseline(50)
+    model = BaselineModel(baseline)
+    engine = DecisionEngine(model, DecisionConfig(warmup_samples=1))
+    sample = baseline[0].copy()
+    sample[0] += 2 * model.std[0]
+
+    for _ in range(4):
+        result = engine.score(sample)
+
+    assert result.risk_state in {"TRUSTED", "OBSERVING", "WATCH"}
+    assert result.tier != "lock"
+
+
 def test_warmup_waits_before_severe_actions():
     baseline = build_baseline(50)
     engine = DecisionEngine(BaselineModel(baseline), DecisionConfig(warmup_samples=4, entry_threshold=0.52, exit_threshold=0.35))

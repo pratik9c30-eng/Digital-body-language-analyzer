@@ -7,21 +7,24 @@ from typing import Any
 import numpy as np
 
 from ml.explainability import explain
+from config import settings
 
 
 @dataclass
 class DecisionConfig:
     std_floor: float = 0.12
     warmup_samples: int = 4
-    entry_threshold: float = 0.42
-    watch_threshold: float = 0.52
-    challenge_threshold: float = 0.64
-    lock_threshold: float = 0.8
-    exit_threshold: float = 0.35
+    entry_threshold: float = 0.55
+    watch_threshold: float = 0.68
+    challenge_threshold: float = 0.78
+    lock_threshold: float = 0.90
+    exit_threshold: float = 0.45
     persistence_window: int = 5
     signal_agreement_min: float = 0.28
     min_confidence: float = 0.55
     smoothing_alpha: float = 0.45
+    anomaly_z_tolerance: float = settings.anomaly_z_tolerance
+    anomaly_z_scale: float = settings.anomaly_z_scale
 
 
 class DecisionEngine:
@@ -57,10 +60,11 @@ class DecisionEngine:
         return result
 
     def _signal_anomaly(self, z_scores: np.ndarray) -> tuple[float, float, list[float]]:
-        std_floor = max(self.config.std_floor, 1e-6)
         z_abs = np.abs(z_scores)
-        signal_scores = np.clip(z_abs / 3.5, 0.0, 1.5)
-        signal_scores = np.clip(signal_scores / max(1.0, np.percentile(signal_scores, 75)), 0.0, 1.0)
+        tolerance = max(0.0, self.config.anomaly_z_tolerance)
+        scale = max(1e-6, self.config.anomaly_z_scale)
+        excess = np.maximum(z_abs - tolerance, 0.0)
+        signal_scores = np.clip(excess / scale, 0.0, 1.0)
         signal_strength = float(np.mean(signal_scores))
         agreement = float(np.mean(signal_scores >= 0.48))
         return signal_strength, agreement, signal_scores.tolist()

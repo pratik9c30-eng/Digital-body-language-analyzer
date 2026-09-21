@@ -1,0 +1,1 @@
+"""Optional AWS integrations. Local MVP operation does not require AWS."""

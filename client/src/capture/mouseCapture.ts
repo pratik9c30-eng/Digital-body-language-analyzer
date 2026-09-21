@@ -1,0 +1,6 @@
+export type MouseStats = { mouse_velocity: number; mouse_acceleration: number; mouse_curvature: number; mouse_jitter: number; click_dwell: number };
+export class MouseCapture { private points: {x:number;y:number;t:number}[]=[]; private clicks: number[]=[]; private down=0;
+  onMove(e: PointerEvent) { const last=this.points[this.points.length-1]; const now=performance.now(); if(last) { const dt=Math.max(1, now-last.t); this.points.push({x:e.clientX,y:e.clientY,t:now}); if(this.points.length>180)this.points.shift(); } else this.points.push({x:e.clientX,y:e.clientY,t:now}); }
+  onDown(){this.down=performance.now()} onUp(){if(this.down)this.clicks.push(performance.now()-this.down);this.down=0}
+  snapshot(): MouseStats { const speeds=this.points.slice(1).map((p,i)=>Math.hypot(p.x-this.points[i].x,p.y-this.points[i].y)/Math.max(1,p.t-this.points[i].t)); const mean=(xs:number[])=>xs.length?xs.reduce((a,b)=>a+b,0)/xs.length:0.3; const accel=speeds.slice(1).map((x,i)=>Math.abs(x-speeds[i])); return {mouse_velocity:Math.min(1,mean(speeds)/2),mouse_acceleration:Math.min(1,mean(accel)/1.5),mouse_curvature:Math.min(1,Math.abs(speeds.length-(new Set(speeds.map(x=>Math.round(x*10))).size))/Math.max(1,speeds.length)),mouse_jitter:Math.min(1,mean(speeds.map(x=>Math.abs(x-mean(speeds))))),click_dwell:Math.min(1,mean(this.clicks)/500)}; }
+}

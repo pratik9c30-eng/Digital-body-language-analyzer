@@ -1,0 +1,10 @@
+.web-threads-container {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: auto;
+}
+
+.web-threads-container canvas {
+  opacity: 0.72;
+}

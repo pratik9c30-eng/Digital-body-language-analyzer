@@ -1,0 +1,2 @@
+import { useEffect } from 'react';
+export function PanicGestureListener({onLock}:{onLock:()=>void}){useEffect(()=>{let points:{x:number;y:number;t:number}[]=[];const move=(e:PointerEvent)=>{const now=Date.now();points.push({x:e.clientX,y:e.clientY,t:now});points=points.filter(p=>now-p.t<1200);if(points.length>2){const a=points[0],b=points[points.length-1];if(Math.hypot(b.x-a.x,b.y-a.y)>Math.min(innerWidth,innerHeight)*.7)onLock();}};window.addEventListener('pointermove',move);return()=>window.removeEventListener('pointermove',move)},[onLock]);return null}

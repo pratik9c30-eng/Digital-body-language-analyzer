@@ -1,0 +1,2 @@
+export type AwsEvent = {user_id:string;timestamp:string;trust_score:number;tier:'silent'|'challenge'|'lock';bot_probability:number;vector:Record<string,number>};
+export async function sendAwsBatch(endpoint:string, events:AwsEvent[]):Promise<void>{if(!endpoint||events.length===0)return;const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({events})});if(!response.ok)throw new Error(`AWS batch rejected: ${response.status}`);}

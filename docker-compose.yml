@@ -1,0 +1,27 @@
+services:
+  server:
+    build: ./server
+    ports:
+      - "8000:8000"
+    environment:
+      DB_URL: sqlite+aiosqlite:///./data/dbla.db
+      CORS_ORIGINS: http://localhost:5173
+      ALERT_WEBHOOK_URL: ""
+    volumes:
+      - ./data:/app/data
+    command: uvicorn main:app --host 0.0.0.0 --port 8000
+  client:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./client:/app
+      - client_node_modules:/app/node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://localhost:8000
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    depends_on:
+      - server
+volumes:
+  client_node_modules:

@@ -3,6 +3,7 @@ import { SensorFusion } from '../capture/sensorFusion';
 import { CALIBRATION_MIN_QUALITY, buildApiUrl } from '../config';
 import { normalizeFeatures } from '../ml-client/featureNormalizer';
 import { apiRequest } from '../services/apiClient';
+import { saveBaseline } from '../metrics/derivedMetrics';
 
 const TARGET = Number(import.meta.env.VITE_CALIBRATION_SAMPLES || 30);
 type CalibrationStatus = { collected: number; typing: number; mouse: number; scroll: number; confidence: number };
@@ -15,6 +16,7 @@ export function CalibrationGame({ userId, onDone }: { userId: string; onDone: ()
   const [backendReady, setBackendReady] = useState<boolean | null>(null);
   const [backendError, setBackendError] = useState('');
   const sensors = useRef(new SensorFusion());
+  const sampleVectors = useRef<Record<string, number>[]>([]);
 
   useEffect(() => {
     let active = true;
@@ -44,6 +46,7 @@ export function CalibrationGame({ userId, onDone }: { userId: string; onDone: ()
 
     const timer = window.setInterval(() => {
       const vector = normalizeFeatures(sensor.snapshot());
+      sampleVectors.current = [...sampleVectors.current.slice(-29), vector];
       setLatest((current) => ({ ...current, ...vector }));
       void apiRequest('/api/calibration/sample', { method: 'POST', body: JSON.stringify({ session_id: userId, ts: new Date().toISOString(), vector }) })
         .then((response) => response.ok ? response.json() : Promise.reject(new Error(`HTTP ${response.status}`)))
@@ -65,6 +68,7 @@ export function CalibrationGame({ userId, onDone }: { userId: string; onDone: ()
     try {
       const response = await apiRequest(`/api/calibration/finalize?session_id=${encodeURIComponent(userId)}`, { method: 'POST' });
       if (!response.ok) { const detail = await response.json().catch(() => null); throw new Error(detail?.detail || detail?.error || 'Calibration could not be saved'); }
+      saveBaseline(userId, sampleVectors.current);
       onDone();
     } catch (caught) { setError(caught instanceof Error ? caught.message : 'Calibration could not be saved'); setSaving(false); }
   };

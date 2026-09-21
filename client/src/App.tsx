@@ -15,6 +15,7 @@ import { DashboardShell } from './components/DashboardPages';
 import { apiRequest } from './services/apiClient';
 import './styles/globals.css';
 import { clearBaseline } from './metrics/derivedMetrics';
+import { clearCalibrationProgress } from './metrics/calibrationProgress';
 
 function VerificationModal({ onComplete }: { onComplete: () => void }) {
   return <div className="verification-overlay" role="presentation">
@@ -35,7 +36,7 @@ export default function App() {
   const userId = 'demo-session';
   const { score, vector, metrics, baseline, connection } = useBehaviorStream(userId, calibrated);
   const lock = useCallback(() => setLocked(true), []);
-  const resetDemo = () => { void apiRequest(`/api/admin/session/${userId}`, { method: 'DELETE' }).catch(() => undefined); clearBaseline(userId); setLocked(false); setVerificationOpen(false); setCalibrated(false); };
+  const resetDemo = () => { void apiRequest(`/api/admin/session/${userId}`, { method: 'DELETE' }).catch(() => undefined); clearBaseline(userId); clearCalibrationProgress(userId); setLocked(false); setVerificationOpen(false); setCalibrated(false); };
   const background = <WebThreads color1="#80D0B2" color2="#F4B860" color3="#FFFFFF" speed={0.16} threadCount={6} frequency={5} spread={0.2} brightness={0.5} opacity={0.9} mouseInteraction mouseStrength={0.24} />;
 
   if (!calibrated) return <div className="app-shell calibration-shell">{background}<div className="app-content"><CalibrationGame userId={userId} onDone={() => setCalibrated(true)} /></div></div>;

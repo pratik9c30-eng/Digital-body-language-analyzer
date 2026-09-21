@@ -1,4 +1,5 @@
 import { API_BASE_URL, buildApiUrl } from '../config';
+import { supabase } from '../lib/supabase';
 
 export type ApiErrorType = 'network' | 'timeout' | 'validation' | 'server' | 'cors' | 'unknown';
 
@@ -16,10 +17,12 @@ export async function apiRequest(input: string, init: RequestInit = {}): Promise
   const timeout = setTimeout(() => controller.abort(), 7000);
 
   try {
+    const { data: { session } } = supabase ? await supabase.auth.getSession() : { data: { session: null } };
     const response = await fetch(url, {
       ...init,
       headers: {
         'Content-Type': 'application/json',
+        ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
         ...init.headers,
       },
       signal: controller.signal,

@@ -7,3 +7,5 @@ server/.env
 data/*.db
 client/node_modules/
 client/dist/
+*.db
+*.tsbuildinfo

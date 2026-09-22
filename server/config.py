@@ -5,6 +5,8 @@ class Settings(BaseSettings):
     db_url: str = "sqlite+aiosqlite:///./data/dbla.db"
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
     alert_webhook_url: str = ""
+    anomaly_z_tolerance: float = 3.0
+    anomaly_z_scale: float = 4.0
     aws_region: str = ""
     aws_s3_bucket: str = ""
     aws_dynamodb_table: str = ""

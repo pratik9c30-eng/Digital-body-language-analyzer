@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import type { Session, User } from '@supabase/supabase-js';
-import { supabase, supabaseConfigError } from '../lib/supabase';
+
+export type User = { id: string; email?: string; user_metadata?: { display_name?: string } };
+type Session = { user: User };
 
 type AuthResult = { error: string | null };
 type AuthContextValue = {
@@ -16,49 +17,60 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-function authError(error: unknown) {
-  return error instanceof Error ? error.message : 'Supabase authentication failed.';
+type StoredAccount = { id: string; email: string; password: string; displayName: string };
+const ACCOUNTS_KEY = 'dbla:local-accounts';
+const SESSION_KEY = 'dbla:local-session';
+
+function readAccounts(): StoredAccount[] {
+  try { return JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || '[]') as StoredAccount[]; } catch { return []; }
 }
+
+function readSession(): Session | null {
+  try { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null') as Session | null; } catch { return null; }
+}
+
+function toSession(account: StoredAccount): Session {
+  return { user: { id: account.id, email: account.email, user_metadata: { display_name: account.displayName } } };
+}
+
+function localError(message: string) { return { error: message }; }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!supabase) { setLoading(false); return; }
-    let active = true;
-    void supabase.auth.getSession().then(({ data }) => { if (active) { setSession(data.session); setLoading(false); } });
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
-      setLoading(false);
-    });
-    return () => { active = false; listener.subscription.unsubscribe(); };
+    setSession(readSession());
   }, []);
 
   const value = useMemo<AuthContextValue>(() => ({
     session,
     user: session?.user ?? null,
     loading,
-    configError: supabaseConfigError,
+    configError: null,
     login: async (email, password) => {
-      if (!supabase) return { error: supabaseConfigError };
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      return { error: error ? authError(error) : null };
+      const account = readAccounts().find((candidate) => candidate.email === email && candidate.password === password);
+      if (!account) return localError('Invalid login credentials.');
+      const nextSession = toSession(account);
+      localStorage.setItem(SESSION_KEY, JSON.stringify(nextSession));
+      setSession(nextSession);
+      return { error: null };
     },
     signup: async (email, password, displayName) => {
-      if (!supabase) return { error: supabaseConfigError };
-      const { error } = await supabase.auth.signUp({ email, password, options: { data: { display_name: displayName.trim().slice(0, 80) } } });
-      return { error: error ? authError(error) : null };
+      const accounts = readAccounts();
+      if (accounts.some((account) => account.email === email)) return localError('User already registered.');
+      accounts.push({ id: crypto.randomUUID(), email, password, displayName: displayName.trim().slice(0, 80) });
+      localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
+      return { error: null };
     },
     logout: async () => {
-      if (!supabase) return { error: supabaseConfigError };
-      const { error } = await supabase.auth.signOut();
-      return { error: error ? authError(error) : null };
+      localStorage.removeItem(SESSION_KEY);
+      setSession(null);
+      return { error: null };
     },
     refreshSession: async () => {
-      if (!supabase) return { error: supabaseConfigError };
-      const { error } = await supabase.auth.refreshSession();
-      return { error: error ? authError(error) : null };
+      setSession(readSession());
+      return { error: null };
     },
   }), [loading, session]);
 

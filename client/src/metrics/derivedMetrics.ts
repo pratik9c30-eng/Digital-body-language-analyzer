@@ -8,15 +8,15 @@ const BASELINE_KEY = 'dbla:baseline:';
 
 export function deriveMetrics(vector: Record<string, number>, session: { activeMs?: number; idleMs?: number } = {}): DerivedMetrics {
   return {
-    typing_wpm: (vector.typing_speed || 0) * 48,
+    typing_wpm: (vector.typing_speed || 0) * 120,
     key_flight_ms: (vector.flight_mean || 0) * 300,
     key_dwell_ms: (vector.dwell_mean || 0) * 200,
     digraph_ms: (vector.digraph_mean || 0) * 300,
     mouse_velocity_px_ms: (vector.mouse_velocity || 0) * 2,
     mouse_acceleration: (vector.mouse_acceleration || 0) * 1.5,
     mouse_curvature: (vector.mouse_curvature || 0) * 100,
-    scroll_speed_px_ms: (vector.scroll_speed || 0) * 2,
-    scroll_reversals: (vector.scroll_reversals || 0) * 5,
+    scroll_speed_px_ms: (vector.scroll_speed || 0) * 10,
+    scroll_reversals: (vector.scroll_reversals || 0) * 10,
     active_minutes: (session.activeMs || 0) / 60000,
     idle_minutes: (session.idleMs || 0) / 60000,
   };

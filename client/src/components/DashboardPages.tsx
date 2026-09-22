@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Activity, ChevronDown, CircleUserRound, Cloud, Fingerprint as FingerprintIcon, Gauge, Settings, Shield, ShieldCheck, Sparkles, Waves } from 'lucide-react';
-import type { User } from '@supabase/supabase-js';
+import type { User } from '../auth/AuthProvider';
 import type { ConnectionStatus, Score } from '../ws/socketClient';
 import { loadCalibrationProgress, CALIBRATION_MINIMUM, type Behavior } from '../metrics/calibrationProgress';
 import { deltaPercent, metricLabels, patternPercentages, type DerivedMetrics, type MetricKey, type MetricsBaseline } from '../metrics/derivedMetrics';
